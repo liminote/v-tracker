@@ -376,6 +376,7 @@
                         <th>金額</th>
                         <th>專案</th>
                         <th>備註</th>
+                        <th style="width: 80px;">操作</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -1118,6 +1119,11 @@
                         // 認證有效且未過期
                         document.getElementById('passwordOverlay').style.display = 'none';
                         document.getElementById('appContent').style.display = 'block';
+
+                        // 自動載入資料
+                        if (API_KEY) {
+                            setTimeout(loadGoogleSheetsData, 1000);
+                        }
                         return;
                     } else {
                         // 認證已過期，清除舊資料
