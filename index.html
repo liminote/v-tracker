@@ -375,12 +375,23 @@
             <details style="margin-top: 15px; font-size: 14px; color: #666;">
                 <summary style="cursor: pointer;">如何取得 API 金鑰？</summary>
                 <div style="margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 5px;">
+                    <h4>設定 API 金鑰（只讀權限）：</h4>
                     <ol>
                         <li>前往 <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
                         <li>建立新專案或選擇現有專案</li>
                         <li>啟用 Google Sheets API</li>
                         <li>建立憑證 → API 金鑰</li>
                         <li>複製金鑰並貼上到上方欄位</li>
+                    </ol>
+
+                    <h4 style="margin-top: 15px; color: #e65100;">如需編輯功能（回寫試算表）：</h4>
+                    <p style="background: #fff3e0; padding: 8px; border-radius: 4px; margin: 8px 0;">
+                        <strong>注意：</strong>API 金鑰只能讀取資料，無法編輯。如需編輯功能，請使用 Google Apps Script 或 OAuth 認證。
+                    </p>
+                    <ol>
+                        <li>考慮使用 Google Apps Script 建立自訂 Web App</li>
+                        <li>或使用 OAuth 2.0 認證取得完整權限</li>
+                        <li>目前編輯功能僅限本地端顯示</li>
                     </ol>
                 </div>
             </details>
@@ -956,13 +967,33 @@
                     accountingData[index][field] || '';
 
                 let inputType = 'text';
-                if (field === 'date') inputType = 'date';
+                let inputValue = value;
+                if (field === 'date') {
+                    inputType = 'date';
+                    // 轉換日期格式為 date input 需要的 YYYY-MM-DD 格式
+                    if (value && value.includes('/')) {
+                        const parts = value.split('/');
+                        if (parts.length === 3 && parts[0].length === 4) {
+                            // YYYY/M/D 格式轉為 YYYY-MM-DD
+                            const year = parts[0];
+                            const month = parts[1].padStart(2, '0');
+                            const day = parts[2].padStart(2, '0');
+                            inputValue = `${year}-${month}-${day}`;
+                        }
+                    } else if (value && value.includes('-')) {
+                        // 如果已經是 YYYY-MM-DD 格式，直接使用
+                        inputValue = value;
+                    } else if (!value) {
+                        // 如果沒有日期，保持空值
+                        inputValue = '';
+                    }
+                }
                 if (field === 'amount') inputType = 'number';
 
                 const input = document.createElement('input');
                 input.type = inputType;
                 input.className = 'edit-input';
-                input.value = value;
+                input.value = inputValue;
                 input.dataset.field = field;
 
                 cell.innerHTML = '';
@@ -993,6 +1024,17 @@
 
                 if (field === 'amount') {
                     value = parseFloat(value) || 0;
+                } else if (field === 'date' && value) {
+                    // 將 YYYY-MM-DD 格式轉回 YYYY/M/D 格式
+                    if (value.includes('-')) {
+                        const parts = value.split('-');
+                        if (parts.length === 3) {
+                            const year = parts[0];
+                            const month = parseInt(parts[1]).toString(); // 移除前導零
+                            const day = parseInt(parts[2]).toString(); // 移除前導零
+                            value = `${year}/${month}/${day}`;
+                        }
+                    }
                 }
 
                 updatedData[field] = value;
@@ -1102,51 +1144,139 @@
 
         // 花費排行功能
         function updateRanking() {
+            console.log('=== 更新排行 Debug ===');
+            console.log('總資料筆數:', accountingData.length);
+            console.log('前5筆資料:', accountingData.slice(0, 5));
+
             const period = document.getElementById('rankingPeriod').value;
             let filteredData = [];
             let periodText = '';
 
             const now = new Date();
+            console.log('當前時間:', now);
 
             switch(period) {
                 case 'all':
                     filteredData = [...accountingData];
                     periodText = '全部時間';
+                    console.log('篩選條件: 全部時間, 結果筆數:', filteredData.length);
                     break;
                 case 'year':
                     const currentYear = now.getFullYear();
+                    console.log('篩選條件: 當前年份 =', currentYear);
                     filteredData = accountingData.filter(item => {
-                        if (!item.date) return false;
-                        const itemYear = new Date(item.date).getFullYear();
-                        return itemYear === currentYear;
+                        if (!item.date) {
+                            console.log('跳過: 沒有日期的項目');
+                            return false;
+                        }
+                        try {
+                            const itemDate = new Date(item.date);
+                            const itemYear = itemDate.getFullYear();
+                            const match = itemYear === currentYear;
+                            console.log(`日期: ${item.date} -> 年份: ${itemYear}, 符合: ${match}`);
+                            return match;
+                        } catch (e) {
+                            console.log(`日期解析錯誤: ${item.date}`, e);
+                            return false;
+                        }
                     });
                     periodText = `${currentYear}年`;
+                    console.log('年份篩選結果筆數:', filteredData.length);
                     break;
                 case 'month':
                     const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                    console.log('篩選條件: 當前月份 =', currentMonth);
                     filteredData = accountingData.filter(item => {
-                        if (!item.date) return false;
-                        const itemMonth = item.date.substring(0, 7);
-                        return itemMonth === currentMonth;
+                        if (!item.date) {
+                            console.log('跳過: 沒有日期的項目');
+                            return false;
+                        }
+                        try {
+                            // 支援多種日期格式
+                            let itemMonth = '';
+                            if (item.date.includes('/')) {
+                                const parts = item.date.split('/');
+                                if (parts.length === 3) {
+                                    // 判斷是 YYYY/M/D 還是 MM/DD/YYYY
+                                    if (parts[0].length === 4) {
+                                        // YYYY/M/D 格式
+                                        const year = parts[0];
+                                        const month = parts[1].padStart(2, '0');
+                                        itemMonth = `${year}-${month}`;
+                                    } else {
+                                        // MM/DD/YYYY 或 M/D/YYYY 格式
+                                        const year = parts[2];
+                                        const month = parts[0].padStart(2, '0');
+                                        itemMonth = `${year}-${month}`;
+                                    }
+                                }
+                            } else if (item.date.includes('-')) {
+                                // YYYY-MM-DD 格式
+                                itemMonth = item.date.substring(0, 7);
+                            } else {
+                                console.log(`未知日期格式: ${item.date}`);
+                                return false;
+                            }
+
+                            const match = itemMonth === currentMonth;
+                            console.log(`日期: ${item.date} -> 月份: ${itemMonth}, 符合: ${match}`);
+                            return match;
+                        } catch (e) {
+                            console.log(`日期處理錯誤: ${item.date}`, e);
+                            return false;
+                        }
                     });
                     periodText = `${now.getFullYear()}年${now.getMonth() + 1}月`;
+                    console.log('月份篩選結果筆數:', filteredData.length);
                     break;
                 case 'custom':
                     const startDate = document.getElementById('startDate').value;
                     const endDate = document.getElementById('endDate').value;
+                    console.log('篩選條件: 自訂範圍', startDate, '至', endDate);
 
                     if (startDate && endDate) {
                         filteredData = accountingData.filter(item => {
                             if (!item.date) return false;
-                            // 確保日期格式正確比較
-                            const itemDate = item.date.substring(0, 10); // 取 YYYY-MM-DD 部分
-                            return itemDate >= startDate && itemDate <= endDate;
+                            try {
+                                // 轉換為統一格式 YYYY-MM-DD
+                                let itemDate = '';
+                                if (item.date.includes('/')) {
+                                    const parts = item.date.split('/');
+                                    if (parts.length === 3) {
+                                        // 判斷是 YYYY/M/D 還是 MM/DD/YYYY
+                                        if (parts[0].length === 4) {
+                                            // YYYY/M/D 格式
+                                            const year = parts[0];
+                                            const month = parts[1].padStart(2, '0');
+                                            const day = parts[2].padStart(2, '0');
+                                            itemDate = `${year}-${month}-${day}`;
+                                        } else {
+                                            // MM/DD/YYYY 或 M/D/YYYY 格式
+                                            const year = parts[2];
+                                            const month = parts[0].padStart(2, '0');
+                                            const day = parts[1].padStart(2, '0');
+                                            itemDate = `${year}-${month}-${day}`;
+                                        }
+                                    }
+                                } else if (item.date.includes('-')) {
+                                    // 已經是 YYYY-MM-DD 格式
+                                    itemDate = item.date.substring(0, 10);
+                                }
+
+                                const match = itemDate >= startDate && itemDate <= endDate;
+                                console.log(`日期: ${item.date} -> 轉換: ${itemDate}, 符合: ${match}`);
+                                return match;
+                            } catch (e) {
+                                console.log(`自訂範圍日期處理錯誤: ${item.date}`, e);
+                                return false;
+                            }
                         });
                         periodText = `${startDate} 至 ${endDate}`;
                     } else {
                         filteredData = [...accountingData];
                         periodText = '自訂區間（請選擇日期）';
                     }
+                    console.log('自訂範圍篩選結果筆數:', filteredData.length);
                     break;
             }
 
@@ -1219,8 +1349,14 @@
 
         // 同步編輯資料到 Google Sheets
         async function syncToGoogleSheets(rowIndex, updatedData) {
+            console.log('嘗試同步到 Google Sheets...', { rowIndex, updatedData });
+
             if (!API_KEY) {
-                alert('需要 API 金鑰才能同步到 Google Sheets');
+                console.log('沒有 API 金鑰，跳過同步');
+                document.getElementById('loadingStatus').textContent = '⚠️ 本地修改已儲存，但需要 API 權限才能同步到 Google Sheets';
+                setTimeout(() => {
+                    document.getElementById('loadingStatus').textContent = '';
+                }, 5000);
                 return;
             }
 
@@ -1242,6 +1378,8 @@
                 const range = `${SHEET_NAME}!A${sheetRowNumber}:F${sheetRowNumber}`;
                 const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?valueInputOption=RAW&key=${API_KEY}`;
 
+                console.log('同步請求:', { range, url, values });
+
                 const response = await fetch(url, {
                     method: 'PUT',
                     headers: {
@@ -1252,6 +1390,9 @@
                     })
                 });
 
+                const responseData = await response.json();
+                console.log('API 回應:', responseData);
+
                 if (response.ok) {
                     console.log('已成功同步到 Google Sheets');
                     document.getElementById('loadingStatus').textContent = '✅ 資料已同步到 Google Sheets';
@@ -1259,14 +1400,31 @@
                         document.getElementById('loadingStatus').textContent = '';
                     }, 3000);
                 } else {
-                    const errorData = await response.json();
-                    console.error('同步失敗:', errorData);
-                    alert('同步到 Google Sheets 失敗，請檢查權限設定');
+                    console.error('同步失敗:', responseData);
+
+                    let errorMessage = '同步到 Google Sheets 失敗';
+                    if (responseData.error) {
+                        if (responseData.error.message.includes('does not have edit access')) {
+                            errorMessage = '⚠️ API 金鑰沒有編輯權限，本地修改已儲存';
+                        } else if (responseData.error.message.includes('API key not valid')) {
+                            errorMessage = '⚠️ API 金鑰無效，請檢查設定';
+                        } else {
+                            errorMessage = `⚠️ 同步失敗: ${responseData.error.message}`;
+                        }
+                    }
+
+                    document.getElementById('loadingStatus').textContent = errorMessage;
+                    setTimeout(() => {
+                        document.getElementById('loadingStatus').textContent = '';
+                    }, 8000);
                 }
 
             } catch (error) {
                 console.error('同步錯誤:', error);
-                alert('同步過程中發生錯誤');
+                document.getElementById('loadingStatus').textContent = '⚠️ 同步過程中發生錯誤，本地修改已儲存';
+                setTimeout(() => {
+                    document.getElementById('loadingStatus').textContent = '';
+                }, 5000);
             }
         }
 
