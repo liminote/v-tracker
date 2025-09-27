@@ -282,6 +282,62 @@
         .app-content {
             display: none;
         }
+
+        /* 編輯功能樣式 */
+        .edit-btn, .save-btn, .cancel-btn {
+            background: var(--color-5);
+            color: #4a4a4a;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-right: 4px;
+        }
+
+        .edit-btn:hover {
+            background: var(--color-9);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .save-btn {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .save-btn:hover {
+            background: #45a049;
+        }
+
+        .cancel-btn {
+            background: #F44336;
+            color: white;
+        }
+
+        .cancel-btn:hover {
+            background: #d32f2f;
+        }
+
+        .edit-input {
+            width: 100%;
+            padding: 4px 8px;
+            border: 1px solid var(--color-9);
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .edit-input:focus {
+            outline: none;
+            border-color: var(--color-10);
+        }
+
+        .editing-row {
+            background-color: var(--color-2) !important;
+        }
     </style>
 </head>
 <body>
@@ -381,8 +437,8 @@
                 </thead>
                 <tbody id="tableBody">
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
-                            請上傳 CSV 檔案以顯示資料
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                            請先同步資料以顯示明細
                         </td>
                     </tr>
                 </tbody>
@@ -843,8 +899,9 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
-            accountingData.forEach(item => {
+            accountingData.forEach((item, index) => {
                 const row = tbody.insertRow();
+                row.dataset.index = index; // 儲存索引以便編輯
 
                 // 取得分類的底色
                 let categoryBgColor = '';
@@ -854,21 +911,123 @@
                 }
 
                 row.innerHTML = `
-                    <td>${item.date || ''}</td>
-                    <td style="background-color: ${categoryBgColor}; padding: 8px; border-radius: 4px; font-weight: 500;">
+                    <td class="editable-cell" data-field="date">${item.date || ''}</td>
+                    <td class="editable-cell" data-field="category" style="background-color: ${categoryBgColor}; padding: 8px; border-radius: 4px; font-weight: 500;">
                         ${item.category || ''}
                     </td>
-                    <td>${item.content || ''}</td>
-                    <td style="color: ${item.amount >= 0 ? '#4CAF50' : '#F44336'}">
+                    <td class="editable-cell" data-field="content">${item.content || ''}</td>
+                    <td class="editable-cell" data-field="amount" style="color: ${item.amount >= 0 ? '#4CAF50' : '#F44336'}">
                         $${item.amount.toLocaleString()}
                     </td>
-                    <td>${item.project || ''}</td>
-                    <td>${item.note || ''}</td>
+                    <td class="editable-cell" data-field="project">${item.project || ''}</td>
+                    <td class="editable-cell" data-field="note">${item.note || ''}</td>
+                    <td>
+                        <button class="edit-btn" onclick="editRow(${index})">編輯</button>
+                    </td>
                 `;
             });
 
             // 更新搜尋摘要
             setTimeout(performSearch, 100);
+        }
+
+        // 編輯功能
+        let editingRowIndex = -1;
+        let originalData = {};
+
+        function editRow(index) {
+            if (editingRowIndex !== -1) {
+                alert('請先完成當前編輯');
+                return;
+            }
+
+            editingRowIndex = index;
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            const cells = row.querySelectorAll('.editable-cell');
+
+            // 備份原始資料
+            originalData = { ...accountingData[index] };
+
+            // 將每個可編輯欄位轉換為輸入框
+            cells.forEach(cell => {
+                const field = cell.dataset.field;
+                const value = field === 'amount' ?
+                    accountingData[index][field].toString() :
+                    accountingData[index][field] || '';
+
+                let inputType = 'text';
+                if (field === 'date') inputType = 'date';
+                if (field === 'amount') inputType = 'number';
+
+                const input = document.createElement('input');
+                input.type = inputType;
+                input.className = 'edit-input';
+                input.value = value;
+                input.dataset.field = field;
+
+                cell.innerHTML = '';
+                cell.appendChild(input);
+                cell.style.backgroundColor = '';
+                cell.style.padding = '4px';
+            });
+
+            // 更新操作按鈕
+            const actionCell = row.cells[6];
+            actionCell.innerHTML = `
+                <button class="save-btn" onclick="saveRow(${index})">儲存</button>
+                <button class="cancel-btn" onclick="cancelEdit(${index})">取消</button>
+            `;
+
+            row.classList.add('editing-row');
+        }
+
+        function saveRow(index) {
+            const row = document.querySelector(`tr[data-index="${index}"]`);
+            const inputs = row.querySelectorAll('.edit-input');
+
+            // 收集編輯後的資料
+            const updatedData = {};
+            inputs.forEach(input => {
+                const field = input.dataset.field;
+                let value = input.value.trim();
+
+                if (field === 'amount') {
+                    value = parseFloat(value) || 0;
+                }
+
+                updatedData[field] = value;
+            });
+
+            // 更新本地資料
+            accountingData[index] = { ...accountingData[index], ...updatedData };
+
+            // 重新渲染表格
+            updateTable();
+
+            // 重置編輯狀態
+            editingRowIndex = -1;
+            originalData = {};
+
+            // 更新其他視圖
+            updateChart();
+            updateCategoryChart();
+            updateRanking();
+
+            // 同步更新到 Google Sheets
+            syncToGoogleSheets(index, updatedData);
+            console.log('資料已更新:', accountingData[index]);
+        }
+
+        function cancelEdit(index) {
+            // 還原原始資料
+            accountingData[index] = originalData;
+
+            // 重新渲染表格
+            updateTable();
+
+            // 重置編輯狀態
+            editingRowIndex = -1;
+            originalData = {};
         }
 
         // 搜尋功能
@@ -979,7 +1138,9 @@
                     if (startDate && endDate) {
                         filteredData = accountingData.filter(item => {
                             if (!item.date) return false;
-                            return item.date >= startDate && item.date <= endDate;
+                            // 確保日期格式正確比較
+                            const itemDate = item.date.substring(0, 10); // 取 YYYY-MM-DD 部分
+                            return itemDate >= startDate && itemDate <= endDate;
                         });
                         periodText = `${startDate} 至 ${endDate}`;
                     } else {
@@ -1055,6 +1216,59 @@
                 updateRanking();
             }
         });
+
+        // 同步編輯資料到 Google Sheets
+        async function syncToGoogleSheets(rowIndex, updatedData) {
+            if (!API_KEY) {
+                alert('需要 API 金鑰才能同步到 Google Sheets');
+                return;
+            }
+
+            try {
+                // 計算 Google Sheets 中的行號（加上標題行）
+                const sheetRowNumber = rowIndex + 2;
+
+                // 準備更新的資料（按 Google Sheets 欄位順序）
+                const values = [[
+                    updatedData.date || '',
+                    updatedData.category || '',
+                    updatedData.content || '',
+                    updatedData.amount || 0,
+                    updatedData.project || '',
+                    updatedData.note || ''
+                ]];
+
+                // 使用 Google Sheets API 更新特定行
+                const range = `${SHEET_NAME}!A${sheetRowNumber}:F${sheetRowNumber}`;
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?valueInputOption=RAW&key=${API_KEY}`;
+
+                const response = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        values: values
+                    })
+                });
+
+                if (response.ok) {
+                    console.log('已成功同步到 Google Sheets');
+                    document.getElementById('loadingStatus').textContent = '✅ 資料已同步到 Google Sheets';
+                    setTimeout(() => {
+                        document.getElementById('loadingStatus').textContent = '';
+                    }, 3000);
+                } else {
+                    const errorData = await response.json();
+                    console.error('同步失敗:', errorData);
+                    alert('同步到 Google Sheets 失敗，請檢查權限設定');
+                }
+
+            } catch (error) {
+                console.error('同步錯誤:', error);
+                alert('同步過程中發生錯誤');
+            }
+        }
 
         // 密碼保護功能
         const CORRECT_PASSWORD = '661212'; // 修改為你想要的6位密碼
