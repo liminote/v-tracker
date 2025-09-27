@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>記帳分析儀表板</title>
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="googlebot" content="noindex, nofollow">
+    <title>∞ Vanny 的豐盛記錄</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -913,8 +915,15 @@
                 document.getElementById('appContent').style.display = 'block';
                 errorDiv.textContent = '';
 
-                // 儲存登入狀態（可選，重新整理後仍保持登入）
-                localStorage.setItem('vanny_tracker_authenticated', 'true');
+                // 儲存登入狀態（30天有效期）
+                const expiryDate = new Date();
+                expiryDate.setDate(expiryDate.getDate() + 30); // 30天後過期
+
+                const authData = {
+                    authenticated: true,
+                    expiry: expiryDate.getTime()
+                };
+                localStorage.setItem('vanny_tracker_auth', JSON.stringify(authData));
 
                 // 初始化應用
                 if (API_KEY) {
@@ -938,13 +947,36 @@
             }
         });
 
-        // 檢查是否已經認證過
+        // 檢查是否已經認證過且未過期
         window.addEventListener('load', function() {
-            const isAuthenticated = localStorage.getItem('vanny_tracker_authenticated');
-            if (isAuthenticated === 'true') {
-                document.getElementById('passwordOverlay').style.display = 'none';
-                document.getElementById('appContent').style.display = 'block';
+            const authDataStr = localStorage.getItem('vanny_tracker_auth');
+
+            if (authDataStr) {
+                try {
+                    const authData = JSON.parse(authDataStr);
+                    const now = new Date().getTime();
+
+                    if (authData.authenticated && authData.expiry && now < authData.expiry) {
+                        // 認證有效且未過期
+                        document.getElementById('passwordOverlay').style.display = 'none';
+                        document.getElementById('appContent').style.display = 'block';
+                        return;
+                    } else {
+                        // 認證已過期，清除舊資料
+                        localStorage.removeItem('vanny_tracker_auth');
+                        // 清除舊版本的認證資料
+                        localStorage.removeItem('vanny_tracker_authenticated');
+                    }
+                } catch (e) {
+                    // 資料格式錯誤，清除
+                    localStorage.removeItem('vanny_tracker_auth');
+                    localStorage.removeItem('vanny_tracker_authenticated');
+                }
             }
+
+            // 顯示密碼輸入界面
+            document.getElementById('passwordOverlay').style.display = 'flex';
+            document.getElementById('appContent').style.display = 'none';
         });
     </script>
     </div>
