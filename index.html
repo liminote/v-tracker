@@ -340,6 +340,7 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('monthly')">月份分析</button>
             <button class="tab" onclick="switchTab('details')">明細查詢</button>
+            <button class="tab" onclick="switchTab('ranking')">花費排行</button>
         </div>
 
         <div id="monthly" class="tab-content active">
@@ -381,6 +382,47 @@
                     <tr>
                         <td colspan="6" style="text-align: center; padding: 40px; color: #999;">
                             請上傳 CSV 檔案以顯示資料
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="ranking" class="tab-content">
+            <div class="search-section">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+                    <label style="font-weight: 500; color: #5a5a5a;">時間範圍：</label>
+                    <select id="rankingPeriod" style="padding: 10px; border: 2px solid var(--color-9); border-radius: 8px; background: white;">
+                        <option value="all">全部時間</option>
+                        <option value="year">本年度</option>
+                        <option value="month">本月</option>
+                        <option value="custom">自訂區間</option>
+                    </select>
+                    <input type="date" id="startDate" style="padding: 10px; border: 2px solid var(--color-9); border-radius: 8px; background: white; display: none;" />
+                    <span id="dateSeparator" style="display: none;">至</span>
+                    <input type="date" id="endDate" style="padding: 10px; border: 2px solid var(--color-9); border-radius: 8px; background: white; display: none;" />
+                    <button onclick="updateRanking()" class="upload-btn" style="padding: 10px 20px;">更新排行</button>
+                </div>
+                <div id="rankingSummary" style="background: var(--color-3); padding: 10px; border-radius: 8px; font-weight: 500; text-align: center;">
+                    顯示全部時間的前50筆花費排行
+                </div>
+            </div>
+            <table class="data-table" id="rankingTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">排名</th>
+                        <th>日期</th>
+                        <th>分類</th>
+                        <th>內容</th>
+                        <th>金額</th>
+                        <th>專案</th>
+                        <th>備註</th>
+                    </tr>
+                </thead>
+                <tbody id="rankingTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                            請先同步資料以顯示排行
                         </td>
                     </tr>
                 </tbody>
@@ -584,6 +626,7 @@
             updateChart();
             updateCategoryChart();
             updateTable();
+            updateRanking();
         }
 
         // 更新統計（已移除統計卡片顯示）
@@ -896,6 +939,121 @@
 
         document.getElementById('searchInput').addEventListener('input', performSearch);
         document.getElementById('searchType').addEventListener('change', performSearch);
+
+        // 花費排行功能
+        function updateRanking() {
+            const period = document.getElementById('rankingPeriod').value;
+            let filteredData = [];
+            let periodText = '';
+
+            const now = new Date();
+
+            switch(period) {
+                case 'all':
+                    filteredData = [...accountingData];
+                    periodText = '全部時間';
+                    break;
+                case 'year':
+                    const currentYear = now.getFullYear();
+                    filteredData = accountingData.filter(item => {
+                        if (!item.date) return false;
+                        const itemYear = new Date(item.date).getFullYear();
+                        return itemYear === currentYear;
+                    });
+                    periodText = `${currentYear}年`;
+                    break;
+                case 'month':
+                    const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+                    filteredData = accountingData.filter(item => {
+                        if (!item.date) return false;
+                        const itemMonth = item.date.substring(0, 7);
+                        return itemMonth === currentMonth;
+                    });
+                    periodText = `${now.getFullYear()}年${now.getMonth() + 1}月`;
+                    break;
+                case 'custom':
+                    const startDate = document.getElementById('startDate').value;
+                    const endDate = document.getElementById('endDate').value;
+
+                    if (startDate && endDate) {
+                        filteredData = accountingData.filter(item => {
+                            if (!item.date) return false;
+                            return item.date >= startDate && item.date <= endDate;
+                        });
+                        periodText = `${startDate} 至 ${endDate}`;
+                    } else {
+                        filteredData = [...accountingData];
+                        periodText = '自訂區間（請選擇日期）';
+                    }
+                    break;
+            }
+
+            // 按金額排序，取前50筆（只顯示支出，金額取絕對值）
+            const sortedData = filteredData
+                .map(item => ({
+                    ...item,
+                    absAmount: Math.abs(item.amount)
+                }))
+                .sort((a, b) => b.absAmount - a.absAmount)
+                .slice(0, 50);
+
+            // 更新表格
+            const tbody = document.getElementById('rankingTableBody');
+            tbody.innerHTML = '';
+
+            if (sortedData.length === 0) {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                        此期間內沒有資料
+                    </td>
+                `;
+            } else {
+                sortedData.forEach((item, index) => {
+                    const row = tbody.insertRow();
+
+                    // 取得分類的底色
+                    let categoryBgColor = '';
+                    if (item.category && window.categoryColorMap) {
+                        const category = item.category.trim();
+                        categoryBgColor = window.categoryColorMap[category] || window.categoryColorMap['其他'] || '';
+                    }
+
+                    row.innerHTML = `
+                        <td style="text-align: center; font-weight: bold; color: #666;">
+                            ${index + 1}
+                        </td>
+                        <td>${item.date || ''}</td>
+                        <td style="background-color: ${categoryBgColor}; padding: 8px; border-radius: 4px; font-weight: 500;">
+                            ${item.category || ''}
+                        </td>
+                        <td>${item.content || ''}</td>
+                        <td style="color: #F44336; font-weight: 600;">
+                            $${item.absAmount.toLocaleString()}
+                        </td>
+                        <td>${item.project || ''}</td>
+                        <td>${item.note || ''}</td>
+                    `;
+                });
+            }
+
+            // 更新摘要
+            const total = sortedData.reduce((sum, item) => sum + item.absAmount, 0);
+            document.getElementById('rankingSummary').textContent =
+                `${periodText}的前${sortedData.length}筆花費排行，總金額 $${total.toLocaleString()}`;
+        }
+
+        // 時間範圍選擇處理
+        document.getElementById('rankingPeriod').addEventListener('change', function() {
+            const isCustom = this.value === 'custom';
+            document.getElementById('startDate').style.display = isCustom ? 'block' : 'none';
+            document.getElementById('dateSeparator').style.display = isCustom ? 'inline' : 'none';
+            document.getElementById('endDate').style.display = isCustom ? 'block' : 'none';
+
+            if (!isCustom) {
+                updateRanking();
+            }
+        });
 
         // 密碼保護功能
         const CORRECT_PASSWORD = '661212'; // 修改為你想要的6位密碼
