@@ -203,9 +203,99 @@
             color: #7a7a7a;
             font-size: 14px;
         }
+
+        /* 密碼保護樣式 */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--color-2), var(--color-6));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .password-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .password-title {
+            color: #5a5a5a;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--color-5);
+            border-radius: 10px;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 8px;
+            margin-bottom: 20px;
+            background: white;
+            transition: border-color 0.3s ease;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: var(--color-10);
+        }
+
+        .password-submit {
+            background: var(--color-5);
+            color: #4a4a4a;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .password-submit:hover {
+            background: var(--color-10);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .password-error {
+            color: #F44336;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .app-content {
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <!-- 密碼保護界面 -->
+    <div id="passwordOverlay" class="password-overlay">
+        <div class="password-container">
+            <h2 class="password-title">∞ 請輸入密碼</h2>
+            <input type="password" id="passwordInput" class="password-input"
+                   placeholder="••••••" maxlength="6" />
+            <button onclick="checkPassword()" class="password-submit">進入</button>
+            <div id="passwordError" class="password-error"></div>
+        </div>
+    </div>
+
+    <!-- 主應用內容 -->
+    <div id="appContent" class="app-content">
     <div class="container">
         <div class="header">
             <h1>∞ Vanny 的豐盛記錄</h1>
@@ -804,6 +894,59 @@
 
         document.getElementById('searchInput').addEventListener('input', performSearch);
         document.getElementById('searchType').addEventListener('change', performSearch);
+
+        // 密碼保護功能
+        const CORRECT_PASSWORD = '123456'; // 修改為你想要的6位密碼
+
+        function checkPassword() {
+            const inputPassword = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('passwordError');
+
+            if (inputPassword.length !== 6) {
+                errorDiv.textContent = '請輸入6位數字密碼';
+                return;
+            }
+
+            if (inputPassword === CORRECT_PASSWORD) {
+                // 密碼正確，隱藏密碼界面，顯示主應用
+                document.getElementById('passwordOverlay').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+                errorDiv.textContent = '';
+
+                // 儲存登入狀態（可選，重新整理後仍保持登入）
+                localStorage.setItem('vanny_tracker_authenticated', 'true');
+
+                // 初始化應用
+                if (API_KEY) {
+                    setTimeout(loadGoogleSheetsData, 1000);
+                }
+            } else {
+                errorDiv.textContent = '密碼錯誤，請重新輸入';
+                document.getElementById('passwordInput').value = '';
+            }
+        }
+
+        // 只允許輸入數字
+        document.getElementById('passwordInput').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+
+        // 按 Enter 鍵提交
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+
+        // 檢查是否已經認證過
+        window.addEventListener('load', function() {
+            const isAuthenticated = localStorage.getItem('vanny_tracker_authenticated');
+            if (isAuthenticated === 'true') {
+                document.getElementById('passwordOverlay').style.display = 'none';
+                document.getElementById('appContent').style.display = 'block';
+            }
+        });
     </script>
+    </div>
 </body>
 </html>
