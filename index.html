@@ -460,6 +460,27 @@
             padding: 4px 10px;
             font-size: 12px;
         }
+
+        /* RWD: 手機版調整 */
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                /* 改為單欄顯示，避免擠在一起 */
+                gap: 20px;
+                /* 增加間距 */
+            }
+
+            .form-group {
+                margin-bottom: 0;
+                /* 由 grid gap 控制間距 */
+            }
+
+            /* 調整頁籤大小，避免換行 */
+            .tab {
+                padding: 12px 5px;
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 
