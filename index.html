@@ -1303,16 +1303,19 @@
                     row.dataset.index = index; // 儲存索引以便編輯
 
                     // 取得分類的底色
-                    let categoryBgColor = '';
-                    if (item.category && window.categoryColorMap) {
+                    let categoryStyle = '';
+                    if (item.category) {
                         const category = item.category.trim();
-                        categoryBgColor = window.categoryColorMap[category] || window.categoryColorMap['其他'] || '';
+                        // 檢查是否有指定顏色
+                        if (categoryColorMap && categoryColorMap[category]) {
+                            categoryStyle = `background-color: ${categoryColorMap[category]}; color: #fff; padding: 4px 8px; border-radius: 4px; display: inline-block;`;
+                        }
                     }
 
                     row.innerHTML = `
                     <td class="editable-cell" data-field="date">${item.date || ''}</td>
-                    <td class="editable-cell" data-field="category" style="background-color: ${categoryBgColor}; padding: 8px; border-radius: 4px; font-weight: 500;">
-                        ${item.category || ''}
+                    <td class="editable-cell" data-field="category">
+                        <span style="${categoryStyle}">${item.category || ''}</span>
                     </td>
                     <td class="editable-cell" data-field="content">${item.content || ''}</td>
                     <td class="editable-cell" data-field="amount" style="color: ${item.amount >= 0 ? '#4CAF50' : '#F44336'}">
