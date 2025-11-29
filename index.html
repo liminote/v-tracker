@@ -1182,8 +1182,10 @@
                     .slice(0, 8)
                     .map(([category, _]) => category);
 
-                // 準備資料集
-                const sortedMonths = Object.keys(monthlyData).sort();
+                // 準備資料集 - 排序月份 (由新到舊) 並只取最近 12 個月
+                const sortedMonths = Object.keys(monthlyData)
+                    .sort((a, b) => b.localeCompare(a))
+                    .slice(0, 12);
                 const datasets = [];
 
                 topCategories.forEach((category, index) => {
