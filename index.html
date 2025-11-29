@@ -338,6 +338,97 @@
         .editing-row {
             background-color: var(--color-2) !important;
         }
+
+        /* 新增記帳表單樣式 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #5a5a5a;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--color-9);
+            border-radius: 8px;
+            font-size: 16px;
+            background: white;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--color-10);
+        }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tag-chip {
+            background: var(--color-6);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .tag-chip:hover {
+            background: var(--color-9);
+            transform: translateY(-1px);
+        }
+
+        .tag-chip.active {
+            background: var(--color-5);
+            color: #4a4a4a;
+            border-color: var(--color-1);
+            font-weight: 500;
+        }
+
+        .submit-btn {
+            background: var(--color-5);
+            color: #4a4a4a;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            width: 100%;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            background: var(--color-1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .quick-amount {
+            display: flex;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .amount-chip {
+            background: var(--color-4);
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -363,9 +454,17 @@
             <h3>同步記帳資料</h3>
             <p>請先設定 Google Sheets API 金鑰，然後同步資料</p>
             <div style="margin: 15px 0;">
-                <input type="password" id="apiKey" placeholder="輸入 Google Sheets API 金鑰"
-                       style="width: 70%; padding: 10px; border: 2px solid var(--color-9); border-radius: 8px; margin-right: 10px;">
-                <button class="upload-btn" onclick="saveApiKey()">💾 儲存</button>
+                <div style="margin-bottom: 10px;">
+                    <label style="display:block; margin-bottom:5px; text-align:left;">1. Google Sheets API 金鑰 (讀取用)</label>
+                    <input type="password" id="apiKey" placeholder="輸入 Google Sheets API 金鑰"
+                        style="width: 100%; padding: 10px; border: 2px solid var(--color-9); border-radius: 8px;">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="display:block; margin-bottom:5px; text-align:left;">2. Google Apps Script 網址 (寫入用)</label>
+                    <input type="text" id="gasUrl" placeholder="輸入部署後的 Web App URL"
+                        style="width: 100%; padding: 10px; border: 2px solid var(--color-9); border-radius: 8px;">
+                </div>
+                <button class="upload-btn" onclick="saveSettings()">💾 儲存設定</button>
             </div>
             <button class="upload-btn" onclick="loadGoogleSheetsData()">
                 🔄 同步資料
@@ -405,12 +504,68 @@
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('monthly')">月份分析</button>
-            <button class="tab" onclick="switchTab('details')">明細查詢</button>
-            <button class="tab" onclick="switchTab('ranking')">花費排行</button>
+            <button class="tab active" onclick="switchTab('input')">📝 記帳</button>
+            <button class="tab" onclick="switchTab('monthly')">📊 月份分析</button>
+            <button class="tab" onclick="switchTab('details')">📋 明細查詢</button>
+            <button class="tab" onclick="switchTab('ranking')">🏆 花費排行</button>
         </div>
 
-        <div id="monthly" class="tab-content active">
+        <div id="input" class="tab-content active">
+            <form id="accountingForm" onsubmit="submitTransaction(event)">
+                <div class="form-group">
+                    <label class="form-label">日期</label>
+                    <input type="date" id="inputDate" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">分類</label>
+                    <select id="inputCategory" class="form-select" required>
+                        <option value="" disabled selected>選擇分類</option>
+                        <option value="食">食</option>
+                        <option value="衣">衣</option>
+                        <option value="住">住</option>
+                        <option value="行">行</option>
+                        <option value="育">育</option>
+                        <option value="樂">樂</option>
+                        <option value="人">人</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">內容</label>
+                    <input type="text" id="inputContent" class="form-input" placeholder="例如：午餐、捷運..." required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">金額</label>
+                    <input type="number" id="inputAmount" class="form-input" placeholder="0" required inputmode="numeric">
+                    <div class="quick-amount">
+                        <span class="amount-chip" onclick="addAmount(50)">+50</span>
+                        <span class="amount-chip" onclick="addAmount(100)">+100</span>
+                        <span class="amount-chip" onclick="addAmount(500)">+500</span>
+                        <span class="amount-chip" onclick="addAmount(1000)">+1000</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">專案 (可直接輸入或點選標籤)</label>
+                    <input type="text" id="inputProject" class="form-input" placeholder="例如：公司報帳、旅遊...">
+                    <div id="projectTags" class="tag-container">
+                        <!-- 標籤會由 JS 自動生成 -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">備註</label>
+                    <input type="text" id="inputNote" class="form-input" placeholder="選填">
+                </div>
+
+                <button type="submit" id="submitBtn" class="submit-btn">新增紀錄</button>
+            </form>
+        </div>
+
+        <div id="monthly" class="tab-content">
             <div class="chart-container">
                 <canvas id="monthlyChart"></canvas>
             </div>
@@ -525,26 +680,140 @@
         // Google Sheets 設定
         const SHEET_ID = '1CicCL6GYg2lik5E9wHwHTdgHv6dR8G2lIzKHvgf66XU';
         const SHEET_NAME = '記帳資料';
-        const RANGE = `${SHEET_NAME}!A:F`; // 指定工作表名稱和範圍
+        const RANGE = `${SHEET_NAME}!A:F`; 
         let API_KEY = localStorage.getItem('googleSheetsApiKey') || '';
+        let GAS_URL = localStorage.getItem('gasAppUrl') || '';
 
-        // 儲存 API 金鑰
-        function saveApiKey() {
+        // 初始化日期為今天
+        document.getElementById('inputDate').valueAsDate = new Date();
+
+        // 儲存設定 (API Key 和 GAS URL)
+        function saveSettings() {
             const apiKeyInput = document.getElementById('apiKey');
+            const gasUrlInput = document.getElementById('gasUrl');
+            
             const apiKey = apiKeyInput.value.trim();
+            const gasUrl = gasUrlInput.value.trim();
 
             if (apiKey) {
                 API_KEY = apiKey;
                 localStorage.setItem('googleSheetsApiKey', apiKey);
-                document.getElementById('loadingStatus').textContent = '✅ API 金鑰已儲存';
+            }
+            
+            if (gasUrl) {
+                GAS_URL = gasUrl;
+                localStorage.setItem('gasAppUrl', gasUrl);
+            }
+
+            if (apiKey || gasUrl) {
+                document.getElementById('loadingStatus').textContent = '✅ 設定已儲存';
                 apiKeyInput.value = '';
+                gasUrlInput.value = '';
 
                 setTimeout(() => {
                     document.getElementById('loadingStatus').textContent = '';
-                }, 2000);
-            } else {
-                document.getElementById('loadingStatus').textContent = '❌ 請輸入有效的 API 金鑰';
+                    // 如果有 API Key，嘗試重新載入資料
+                    if (API_KEY) loadGoogleSheetsData();
+                }, 1500);
             }
+        }
+
+        // 快速加金額
+        function addAmount(val) {
+            const input = document.getElementById('inputAmount');
+            const current = parseInt(input.value) || 0;
+            input.value = current + val;
+        }
+
+        // 提交記帳
+        async function submitTransaction(e) {
+            e.preventDefault();
+            
+            if (!GAS_URL) {
+                alert('請先在設定區輸入 Google Apps Script 網址！');
+                document.getElementById('apiSection').style.display = 'block';
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ 儲存中...';
+
+            const data = {
+                date: document.getElementById('inputDate').value,
+                category: document.getElementById('inputCategory').value,
+                content: document.getElementById('inputContent').value,
+                amount: document.getElementById('inputAmount').value, // 支出為正數，後端或顯示時處理
+                project: document.getElementById('inputProject').value,
+                note: document.getElementById('inputNote').value
+            };
+
+            try {
+                // 使用 no-cors 模式發送請求，或確保 GAS 處理了 CORS
+                // 這裡使用標準 fetch，GAS 需要正確回傳 CORS header
+                // 或是使用 application/x-www-form-urlencoded 比較容易過
+                
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert('✅ 記帳成功！');
+                    document.getElementById('accountingForm').reset();
+                    document.getElementById('inputDate').valueAsDate = new Date();
+                    
+                    // 重新載入資料以更新圖表和標籤
+                    loadGoogleSheetsData();
+                } else {
+                    throw new Error(result.message || '未知錯誤');
+                }
+
+            } catch (error) {
+                console.error('記帳失敗:', error);
+                alert('❌ 記帳失敗: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        }
+
+        // 生成專案標籤
+        function generateProjectTags() {
+            const projects = new Set();
+            accountingData.forEach(item => {
+                if (item.project) projects.add(item.project);
+            });
+
+            const container = document.getElementById('projectTags');
+            container.innerHTML = '';
+
+            // 轉換為陣列並排序 (依出現頻率或字母)
+            // 這裡簡單依字母排序
+            const sortedProjects = Array.from(projects).sort();
+
+            sortedProjects.forEach(project => {
+                const chip = document.createElement('div');
+                chip.className = 'tag-chip';
+                chip.textContent = project;
+                chip.onclick = () => {
+                    const input = document.getElementById('inputProject');
+                    // 切換選取狀態
+                    if (input.value === project) {
+                        input.value = '';
+                        chip.classList.remove('active');
+                    } else {
+                        input.value = project;
+                        // 移除其他 active
+                        document.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
+                        chip.classList.add('active');
+                    }
+                };
+                container.appendChild(chip);
+            });
         }
 
         // 載入 Google Sheets 資料
@@ -621,6 +890,7 @@
             document.getElementById('loadingStatus').textContent = `✅ 成功載入 ${accountingData.length} 筆記錄`;
 
             updateDisplay();
+            generateProjectTags(); // 資料載入後生成標籤
         }
 
         // 解析CSV
@@ -684,7 +954,7 @@
             } else {
                 // 沒有 API 金鑰：顯示設定區域
                 document.getElementById('apiSection').style.display = 'block';
-                document.getElementById('loadingStatus').textContent = '請先設定 Google Sheets API 金鑰';
+                document.getElementById('loadingStatus').textContent = '請先設定 API 金鑰與 GAS 網址';
             }
         });
 
