@@ -549,8 +549,8 @@
                         <div class="form-group">
                             <label class="form-label">分類</label>
                             <select id="inputCategory" class="form-select" required>
-                                <option value="" disabled selected>選擇分類</option>
-                                <option value="食物">食物</option>
+                                <option value="" disabled>選擇分類</option>
+                                <option value="食物" selected>食物</option>
                                 <option value="食物：網購外送">食物：網購外送</option>
                                 <option value="家用一消耗">家用一消耗</option>
                                 <option value="家用 永久">家用 永久</option>
@@ -586,17 +586,16 @@
                                 inputmode="numeric">
                         </div>
 
-                        <!-- 第三列：專案 (跨兩欄) -->
-                        <div class="form-group form-full">
-                            <label class="form-label">專案 (最近使用排序)</label>
-                            <input type="text" id="inputProject" class="form-input" placeholder="可輸入或點選下方標籤">
+                        <!-- 第三列：專案與備註 -->
+                        <div class="form-group">
+                            <label class="form-label">專案 (最近5個)</label>
+                            <input type="text" id="inputProject" class="form-input" placeholder="可輸入或點選">
                             <div id="projectTags" class="tag-container">
                                 <!-- 標籤會由 JS 自動生成 -->
                             </div>
                         </div>
 
-                        <!-- 第四列：備註 (跨兩欄) -->
-                        <div class="form-group form-full">
+                        <div class="form-group">
                             <label class="form-label">備註</label>
                             <input type="text" id="inputNote" class="form-input" placeholder="選填">
                         </div>
@@ -857,10 +856,10 @@
                 const container = document.getElementById('projectTags');
                 container.innerHTML = '';
 
-                // 依照日期降序排序 (最新的在前面)
-                const sortedProjects = Object.keys(projectLastUsed).sort((a, b) => {
-                    return projectLastUsed[b].localeCompare(projectLastUsed[a]);
-                });
+                // 依照日期降序排序 (最新的在前面)，並只取前 5 個
+                const sortedProjects = Object.keys(projectLastUsed)
+                    .sort((a, b) => projectLastUsed[b].localeCompare(projectLastUsed[a]))
+                    .slice(0, 5);
 
                 sortedProjects.forEach(project => {
                     const chip = document.createElement('div');
