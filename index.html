@@ -1068,7 +1068,15 @@
                     monthlyData[month] += Math.abs(item.amount);
                 });
 
-                const sortedMonths = Object.keys(monthlyData).sort();
+                // 排序月份 (由新到舊) 並只取最近 12 個月
+                const sortedMonths = Object.keys(monthlyData)
+                    .sort((a, b) => b.localeCompare(a)) // 降序排序 (2025-11, 2025-10...)
+                    .slice(0, 12); // 取前 12 個
+
+                // 因為圖表是由左至右繪製，如果希望左邊是最新，保持降序即可
+                // 如果希望左邊是舊的 (時間軸順序)，則需要反轉回升序
+                // 根據使用者要求「由新至舊，由左至右」，我們保持降序
+
                 const expenseData = sortedMonths.map(month => monthlyData[month]);
 
                 const ctx = document.getElementById('monthlyChart').getContext('2d');
