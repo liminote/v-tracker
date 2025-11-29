@@ -759,11 +759,22 @@
             }
 
             // Google Sheets 設定
-            let SHEET_ID = localStorage.getItem('googleSheetId') || '1CicCL6GYg2lik5E9wHwHTdgHv6dR8G2lIzKHvgf66XU'; // 預設 ID
-            let SHEET_NAME = localStorage.getItem('googleSheetName') || '預設 (工作表1)'; // 預設工作表名稱
+            // ==========================================
+            // 使用者設定區 (請在此填入您的設定以避免重複輸入)
+            // ==========================================
+            const USER_CONFIG = {
+                sheetId: '1CicCL6GYg2lik5E9wHwHTdgHv6dR8G2lIzKHvgf66XU',      // 例如: '1CicCL6GYg2lik5E9wHwHTdgHv6dR8G2lIzKHvgf66XU'
+                sheetName: '記帳資料',    // 預設工作表名稱
+                apiKey: 'AIzaSyAmaM6jPbrgUwXKZfYTyOu-EPRxAsBiUkM',       // Google Sheets API Key (請填入您的 API Key)
+                gasUrl: 'https://script.google.com/macros/s/AKfycbwJtD4f2qBJ5MOozcSqN6UFeqgyF-FIv5BVzAWIZlzruZn2GUQBHNGl4VW2kjpB55e0Zw/exec'        // Google Apps Script Web App URL
+            };
+
+            // Google Sheets 設定 (優先使用 USER_CONFIG，若無則讀取 localStorage)
+            let SHEET_ID = USER_CONFIG.sheetId || localStorage.getItem('googleSheetId') || '1CicCL6GYg2lik5E9wHwHTdgHv6dR8G2lIzKHvgf66XU';
+            let SHEET_NAME = USER_CONFIG.sheetName || localStorage.getItem('googleSheetName') || '預設 (工作表1)';
             let RANGE = `${SHEET_NAME}!A:F`;
-            let API_KEY = localStorage.getItem('googleSheetsApiKey') || '';
-            let GAS_URL = localStorage.getItem('gasAppUrl') || '';
+            let API_KEY = USER_CONFIG.apiKey || localStorage.getItem('googleSheetsApiKey') || '';
+            let GAS_URL = USER_CONFIG.gasUrl || localStorage.getItem('gasAppUrl') || '';
 
             // 初始化日期為今天
             document.getElementById('inputDate').valueAsDate = new Date();
