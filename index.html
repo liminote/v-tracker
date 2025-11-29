@@ -493,13 +493,19 @@
                         <small style="color: #666; display: block; margin-top: 5px;">(網址 /d/ 之後的那串亂碼)</small>
                     </div>
                     <div style="margin-bottom: 10px;">
-                        <label style="display:block; margin-bottom:5px; text-align:left;">2. Google Sheets API 金鑰
+                        <label style="display:block; margin-bottom:5px; text-align:left;">2. 工作表名稱 (Tab Name)</label>
+                        <input type="text" id="sheetName" placeholder="例如：記帳資料"
+                            style="width: 100%; padding: 10px; border: 2px solid var(--color-9); border-radius: 8px;">
+                        <small style="color: #666; display: block; margin-top: 5px;">(下方分頁籤的名稱)</small>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display:block; margin-bottom:5px; text-align:left;">3. Google Sheets API 金鑰
                             (讀取用)</label>
                         <input type="password" id="apiKey" placeholder="輸入 Google Sheets API 金鑰"
                             style="width: 100%; padding: 10px; border: 2px solid var(--color-9); border-radius: 8px;">
                     </div>
                     <div style="margin-bottom: 10px;">
-                        <label style="display:block; margin-bottom:5px; text-align:left;">3. Google Apps Script 網址
+                        <label style="display:block; margin-bottom:5px; text-align:left;">4. Google Apps Script 網址
                             (寫入用)</label>
                         <input type="text" id="gasUrl" placeholder="輸入部署後的 Web App URL"
                             style="width: 100%; padding: 10px; border: 2px solid var(--color-9); border-radius: 8px;">
@@ -754,8 +760,8 @@
 
             // Google Sheets 設定
             let SHEET_ID = localStorage.getItem('googleSheetId') || '1CicCL6GYg2lik5E9wHwHTdgHv6dR8G2lIzKHvgf66XU'; // 預設 ID
-            const SHEET_NAME = '記帳資料';
-            const RANGE = `${SHEET_NAME}!A:F`;
+            let SHEET_NAME = localStorage.getItem('googleSheetName') || '預設 (工作表1)'; // 預設工作表名稱
+            let RANGE = `${SHEET_NAME}!A:F`;
             let API_KEY = localStorage.getItem('googleSheetsApiKey') || '';
             let GAS_URL = localStorage.getItem('gasAppUrl') || '';
 
@@ -775,16 +781,24 @@
             // 儲存設定 (API Key 和 GAS URL)
             function saveSettings() {
                 const sheetIdInput = document.getElementById('sheetId');
+                const sheetNameInput = document.getElementById('sheetName');
                 const apiKeyInput = document.getElementById('apiKey');
                 const gasUrlInput = document.getElementById('gasUrl');
 
                 const sheetId = sheetIdInput.value.trim();
+                const sheetName = sheetNameInput.value.trim();
                 const apiKey = apiKeyInput.value.trim();
                 const gasUrl = gasUrlInput.value.trim();
 
                 if (sheetId) {
                     SHEET_ID = sheetId;
                     localStorage.setItem('googleSheetId', sheetId);
+                }
+
+                if (sheetName) {
+                    SHEET_NAME = sheetName;
+                    RANGE = `${SHEET_NAME}!A:F`; // 更新範圍
+                    localStorage.setItem('googleSheetName', sheetName);
                 }
 
                 if (apiKey) {
@@ -797,7 +811,7 @@
                     localStorage.setItem('gasAppUrl', gasUrl);
                 }
 
-                if (sheetId || apiKey || gasUrl) {
+                if (sheetId || sheetName || apiKey || gasUrl) {
                     document.getElementById('loadingStatus').textContent = '✅ 設定已儲存';
                     // 不清空輸入框，方便使用者查看
                     // sheetIdInput.value = ''; 
@@ -1050,6 +1064,7 @@
             window.addEventListener('load', function () {
                 // 預先填入已儲存的設定
                 if (SHEET_ID) document.getElementById('sheetId').value = SHEET_ID;
+                if (SHEET_NAME) document.getElementById('sheetName').value = SHEET_NAME;
                 if (API_KEY) document.getElementById('apiKey').value = API_KEY;
                 if (GAS_URL) document.getElementById('gasUrl').value = GAS_URL;
 
