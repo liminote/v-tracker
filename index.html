@@ -725,6 +725,14 @@
                 '#AEC6CF', '#C3D4E0', '#D8E2E8', '#E6EEF2', '#F0F4F7'
             ];
 
+            // 特定分類顏色指定 (增強區隔度)
+            const categoryColorMap = {
+                '健康醫療美容': '#B5838D', // 玫瑰粉
+                '食物': '#E6B8A2',        // 暖橘色
+                '家用一消耗': '#A5A58D',   // 鼠尾草綠 (注意：這裡使用你在選單中的名稱)
+                '食物：網購外送': '#CB997E' // 深陶土色
+            };
+
             // 切換頁籤
             function switchTab(tabName) {
                 const tabs = document.querySelectorAll('.tab');
@@ -1180,11 +1188,15 @@
 
                 topCategories.forEach((category, index) => {
                     const data = sortedMonths.map(month => monthlyData[month][category] || 0);
+
+                    // 優先使用指定顏色，否則依序使用預設色盤
+                    const color = categoryColorMap[category] || categoryColors[index % categoryColors.length];
+
                     datasets.push({
                         label: category,
                         data: data,
-                        backgroundColor: categoryColors[index],
-                        borderColor: categoryColors[index],
+                        backgroundColor: color,
+                        borderColor: color,
                         borderWidth: 1
                     });
                 });
@@ -1204,8 +1216,9 @@
                     datasets.push({
                         label: '其他',
                         data: otherData,
-                        backgroundColor: categoryColors[8],
-                        borderColor: categoryColors[8],
+                        data: otherData,
+                        backgroundColor: '#D6E0E8', // 其他類別使用淺灰藍
+                        borderColor: '#D6E0E8',
                         borderWidth: 1
                     });
                 }
