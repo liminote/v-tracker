@@ -10,16 +10,27 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --color-1: #E8D1C5;
-            --color-2: #EDDCD2;
-            --color-3: #FFF1E6;
-            --color-4: #F0EFEB;
-            --color-5: #EEDDD3;
-            --color-6: #EDEDE8;
-            --color-7: #E8D1C5;
-            --color-8: #EDDCD2;
-            --color-9: #FFF1E6;
-            --color-10: #F0EFEB;
+            /* 莫蘭迪灰藍色系 */
+            --color-1: #D6E0E8;
+            /* 淺灰藍 - 頁籤背景 */
+            --color-2: #E6EEF2;
+            /* 極淺灰藍 - 背景漸層起點 */
+            --color-3: #F7F9FB;
+            /* 幾近白 - 區塊背景 */
+            --color-4: #EBF1F5;
+            /* 淡灰藍 - 表格標頭 */
+            --color-5: #7A90A4;
+            /* 中灰藍 - 主要按鈕/啟用狀態 */
+            --color-6: #F0F4F7;
+            /* 霧白藍 - 背景漸層終點 */
+            --color-7: #E1E9F0;
+            /* 懸停效果 */
+            --color-8: #F5F8FA;
+            /* 搜尋區塊背景 */
+            --color-9: #CFD9E0;
+            /* 邊框顏色 */
+            --color-10: #5D7285;
+            /* 深灰藍 - 強調/懸停深色 */
         }
 
         * {
@@ -705,13 +716,13 @@
             let monthlyChart = null;
             let categoryChart = null;
 
-            // 分類顏色配置
+            // 分類顏色配置 (莫蘭迪色系)
             const categoryColors = [
-                '#E8D1C5', '#EDDCD2', '#FFF1E6', '#F0EFEB', '#EEDDD3',
-                '#EDEDE8', '#D8E2DC', '#FFE5D9', '#FFCAD4', '#F4ACB7',
-                '#9D8189', '#D6CCC2', '#F5EBE0', '#E3D5CA', '#D5BDAF',
-                '#B5838D', '#E5989B', '#FFB4A2', '#FFCDB2', '#B7B7A4',
-                '#A5A58D', '#6B705C', '#CB997E', '#DDBEA9', '#FFE8D6'
+                '#7A90A4', '#8FA3B5', '#A9B6C2', '#B4C5D4', '#C4C8CB',
+                '#D1D9E0', '#9FB2B8', '#B8AFA7', '#D6CCC2', '#A5A58D',
+                '#6B705C', '#CB997E', '#DDBEA9', '#FFE8D6', '#B7B7A4',
+                '#5D7285', '#708090', '#778899', '#8795A1', '#97AAB8',
+                '#AEC6CF', '#C3D4E0', '#D8E2E8', '#E6EEF2', '#F0F4F7'
             ];
 
             // 切換頁籤
@@ -1073,8 +1084,8 @@
                         datasets: [{
                             label: '支出',
                             data: expenseData,
-                            backgroundColor: '#E8D1C5',
-                            borderColor: '#EDDCD2',
+                            backgroundColor: '#7A90A4',
+                            borderColor: '#5D7285',
                             borderWidth: 2
                         }]
                     },
