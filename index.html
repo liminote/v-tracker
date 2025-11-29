@@ -1741,19 +1741,20 @@
                         const row = tbody.insertRow();
 
                         // 取得分類的底色
-                        let categoryBgColor = '';
-                        if (item.category && window.categoryColorMap) {
+                        let categoryStyle = '';
+                        if (item.category) {
                             const category = item.category.trim();
-                            categoryBgColor = window.categoryColorMap[category] || window.categoryColorMap['其他'] || '';
+                            // 檢查是否有指定顏色
+                            if (categoryColorMap && categoryColorMap[category]) {
+                                categoryStyle = `background-color: ${categoryColorMap[category]}; color: #fff; padding: 4px 8px; border-radius: 4px; display: inline-block;`;
+                            }
                         }
 
                         row.innerHTML = `
-                        <td style="text-align: center; font-weight: bold; color: #666;">
-                            ${index + 1}
-                        </td>
+                        <td>${index + 1}</td>
                         <td>${item.date || ''}</td>
-                        <td style="background-color: ${categoryBgColor}; padding: 8px; border-radius: 4px; font-weight: 500;">
-                            ${item.category || ''}
+                        <td>
+                            <span style="${categoryStyle}">${item.category || ''}</span>
                         </td>
                         <td>${item.content || ''}</td>
                         <td style="color: #F44336; font-weight: 600;">
