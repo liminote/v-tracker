@@ -1059,19 +1059,27 @@
 
                 accountingData.forEach(item => {
                     if (!item.date) return;
-                    const month = item.date.substring(0, 7); // YYYY-MM
-                    if (!monthlyData[month]) {
-                        monthlyData[month] = 0;
+
+                    // 標準化日期格式為 YYYY/MM 以確保排序正確
+                    const dateObj = new Date(item.date);
+                    if (isNaN(dateObj.getTime())) return; // 跳過無效日期
+
+                    const year = dateObj.getFullYear();
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // 補零：01-12
+                    const monthKey = `${year}/${month}`;
+
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = 0;
                     }
 
-                    // 只計算支出（將負數轉為正數，或直接使用絕對值）
-                    monthlyData[month] += Math.abs(item.amount);
+                    // 只計算支出
+                    monthlyData[monthKey] += Math.abs(item.amount);
                 });
 
                 // 排序月份 (由新到舊) 並只取最近 12 個月
                 const sortedMonths = Object.keys(monthlyData)
-                    .sort((a, b) => b.localeCompare(a)) // 降序排序 (2025-11, 2025-10...)
-                    .slice(0, 12); // 取前 12 個
+                    .sort((a, b) => b.localeCompare(a))
+                    .slice(0, 12);
 
                 // 因為圖表是由左至右繪製，如果希望左邊是最新，保持降序即可
                 // 如果希望左邊是舊的 (時間軸順序)，則需要反轉回升序
@@ -1132,17 +1140,23 @@
                 accountingData.forEach(item => {
                     if (!item.date || !item.category) return;
 
-                    const month = item.date.substring(0, 7); // YYYY-MM
+                    // 標準化日期格式
+                    const dateObj = new Date(item.date);
+                    if (isNaN(dateObj.getTime())) return;
+
+                    const year = dateObj.getFullYear();
+                    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                    const monthKey = `${year}/${month}`;
                     const category = item.category.trim();
 
-                    if (!monthlyData[month]) {
-                        monthlyData[month] = {};
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = {};
                     }
-                    if (!monthlyData[month][category]) {
-                        monthlyData[month][category] = 0;
+                    if (!monthlyData[monthKey][category]) {
+                        monthlyData[monthKey][category] = 0;
                     }
 
-                    monthlyData[month][category] += Math.abs(item.amount);
+                    monthlyData[monthKey][category] += Math.abs(item.amount);
                     allCategories.add(category);
                 });
 
