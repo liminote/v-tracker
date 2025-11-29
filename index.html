@@ -405,10 +405,10 @@
             background: var(--color-5);
             color: #4a4a4a;
             border: none;
-            padding: 15px;
+            padding: 12px;
             border-radius: 10px;
             width: 100%;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -421,17 +421,32 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        .quick-amount {
-            display: flex;
-            gap: 10px;
-            margin-top: 8px;
+        /* 緊湊表單佈局 */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 10px;
         }
 
-        .amount-chip {
-            background: var(--color-4);
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
+        .form-full {
+            grid-column: 1 / -1;
+        }
+
+        /* 讓標籤區域更緊湊 */
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+            max-height: 80px;
+            /* 限制高度 */
+            overflow-y: auto;
+            /* 超出可捲動 */
+        }
+
+        .tag-chip {
+            padding: 4px 10px;
             font-size: 12px;
         }
     </style>
@@ -524,67 +539,67 @@
 
             <div id="input" class="tab-content active">
                 <form id="accountingForm" onsubmit="submitTransaction(event)">
-                    <div class="form-group">
-                        <label class="form-label">日期</label>
-                        <input type="date" id="inputDate" class="form-input" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">分類</label>
-                        <select id="inputCategory" class="form-select" required>
-                            <option value="" disabled selected>選擇分類</option>
-                            <option value="食物">食物</option>
-                            <option value="食物：網購外送">食物：網購外送</option>
-                            <option value="家用一消耗">家用一消耗</option>
-                            <option value="家用 永久">家用 永久</option>
-                            <option value="娛樂展演">娛樂展演</option>
-                            <option value="交通費用">交通費用</option>
-                            <option value="工作學習">工作學習</option>
-                            <option value="旅行">旅行</option>
-                            <option value="健康醫療美容">健康醫療美容</option>
-                            <option value="書">書</option>
-                            <option value="快樂小物">快樂小物</option>
-                            <option value="神明捐款">神明捐款</option>
-                            <option value="公共費用-水費">公共費用-水費</option>
-                            <option value="公共費用-電費">公共費用-電費</option>
-                            <option value="公共費用-瓦斯費">公共費用-瓦斯費</option>
-                            <option value="房租">房租</option>
-                            <option value="保險">保險</option>
-                            <option value="其他">其他</option>
-                            <option value="媽媽代買">媽媽代買</option>
-                            <option value="手機網路">手機網路</option>
-                            <option value="隙音">隙音</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">內容</label>
-                        <input type="text" id="inputContent" class="form-input" placeholder="例如：午餐、捷運..." required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">金額</label>
-                        <input type="number" id="inputAmount" class="form-input" placeholder="0" required
-                            inputmode="numeric">
-                        <div class="quick-amount">
-                            <span class="amount-chip" onclick="addAmount(50)">+50</span>
-                            <span class="amount-chip" onclick="addAmount(100)">+100</span>
-                            <span class="amount-chip" onclick="addAmount(500)">+500</span>
-                            <span class="amount-chip" onclick="addAmount(1000)">+1000</span>
+                    <div class="form-grid">
+                        <!-- 第一列：日期與分類 -->
+                        <div class="form-group">
+                            <label class="form-label">日期</label>
+                            <input type="date" id="inputDate" class="form-input" required>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label class="form-label">專案 (可直接輸入或點選標籤)</label>
-                        <input type="text" id="inputProject" class="form-input" placeholder="例如：公司報帳、旅遊...">
-                        <div id="projectTags" class="tag-container">
-                            <!-- 標籤會由 JS 自動生成 -->
+                        <div class="form-group">
+                            <label class="form-label">分類</label>
+                            <select id="inputCategory" class="form-select" required>
+                                <option value="" disabled selected>選擇分類</option>
+                                <option value="食物">食物</option>
+                                <option value="食物：網購外送">食物：網購外送</option>
+                                <option value="家用一消耗">家用一消耗</option>
+                                <option value="家用 永久">家用 永久</option>
+                                <option value="娛樂展演">娛樂展演</option>
+                                <option value="交通費用">交通費用</option>
+                                <option value="工作學習">工作學習</option>
+                                <option value="旅行">旅行</option>
+                                <option value="健康醫療美容">健康醫療美容</option>
+                                <option value="書">書</option>
+                                <option value="快樂小物">快樂小物</option>
+                                <option value="神明捐款">神明捐款</option>
+                                <option value="公共費用-水費">公共費用-水費</option>
+                                <option value="公共費用-電費">公共費用-電費</option>
+                                <option value="公共費用-瓦斯費">公共費用-瓦斯費</option>
+                                <option value="房租">房租</option>
+                                <option value="保險">保險</option>
+                                <option value="其他">其他</option>
+                                <option value="媽媽代買">媽媽代買</option>
+                                <option value="手機網路">手機網路</option>
+                                <option value="隙音">隙音</option>
+                            </select>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label class="form-label">備註</label>
-                        <input type="text" id="inputNote" class="form-input" placeholder="選填">
+                        <!-- 第二列：內容與金額 -->
+                        <div class="form-group">
+                            <label class="form-label">內容</label>
+                            <input type="text" id="inputContent" class="form-input" placeholder="例如：午餐..." required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">金額</label>
+                            <input type="number" id="inputAmount" class="form-input" placeholder="0" required
+                                inputmode="numeric">
+                        </div>
+
+                        <!-- 第三列：專案 (跨兩欄) -->
+                        <div class="form-group form-full">
+                            <label class="form-label">專案 (最近使用排序)</label>
+                            <input type="text" id="inputProject" class="form-input" placeholder="可輸入或點選下方標籤">
+                            <div id="projectTags" class="tag-container">
+                                <!-- 標籤會由 JS 自動生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 第四列：備註 (跨兩欄) -->
+                        <div class="form-group form-full">
+                            <label class="form-label">備註</label>
+                            <input type="text" id="inputNote" class="form-input" placeholder="選填">
+                        </div>
                     </div>
 
                     <button type="submit" id="submitBtn" class="submit-btn">新增紀錄</button>
@@ -763,12 +778,8 @@
                 }
             }
 
-            // 快速加金額
-            function addAmount(val) {
-                const input = document.getElementById('inputAmount');
-                const current = parseInt(input.value) || 0;
-                input.value = current + val;
-            }
+            // 快速加金額 (已移除)
+            // function addAmount(val) { ... }
 
             // 提交記帳
             async function submitTransaction(e) {
@@ -826,19 +837,30 @@
                 }
             }
 
-            // 生成專案標籤
+            // 生成專案標籤 (依最後使用日期排序)
             function generateProjectTags() {
-                const projects = new Set();
+                const projectLastUsed = {};
+
+                // 掃描所有資料，記錄每個專案最後出現的日期
                 accountingData.forEach(item => {
-                    if (item.project) projects.add(item.project);
+                    if (!item.project) return;
+                    const project = item.project.trim();
+                    if (!project) return;
+
+                    // 假設資料格式正確，比較日期字串即可 (YYYY-MM-DD)
+                    // 如果該專案還沒記錄過，或當前這筆資料日期比較新，就更新
+                    if (!projectLastUsed[project] || item.date > projectLastUsed[project]) {
+                        projectLastUsed[project] = item.date;
+                    }
                 });
 
                 const container = document.getElementById('projectTags');
                 container.innerHTML = '';
 
-                // 轉換為陣列並排序 (依出現頻率或字母)
-                // 這裡簡單依字母排序
-                const sortedProjects = Array.from(projects).sort();
+                // 依照日期降序排序 (最新的在前面)
+                const sortedProjects = Object.keys(projectLastUsed).sort((a, b) => {
+                    return projectLastUsed[b].localeCompare(projectLastUsed[a]);
+                });
 
                 sortedProjects.forEach(project => {
                     const chip = document.createElement('div');
