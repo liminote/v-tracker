@@ -852,7 +852,10 @@
                     const result = await response.json();
 
                     if (result.status === 'success') {
-                        alert('✅ 記帳成功！');
+                        // 顯示更詳細的成功訊息，包含回傳的資料
+                        const savedData = result.data || [];
+                        alert(`✅ 記帳成功！\n資料已寫入試算表。\n內容：${savedData.slice(0, 3).join(', ')}...`);
+
                         document.getElementById('accountingForm').reset();
                         document.getElementById('inputDate').valueAsDate = new Date();
 
