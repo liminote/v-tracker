@@ -974,6 +974,10 @@
 
             // 頁面載入時檢查是否有儲存的 API 金鑰
             window.addEventListener('load', function () {
+                // 預先填入已儲存的設定
+                if (API_KEY) document.getElementById('apiKey').value = API_KEY;
+                if (GAS_URL) document.getElementById('gasUrl').value = GAS_URL;
+
                 if (API_KEY) {
                     // 有 API 金鑰：隱藏設定區域，自動載入資料
                     document.getElementById('apiSection').style.display = 'none';
