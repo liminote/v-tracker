@@ -798,7 +798,7 @@
             let GAS_URL = USER_CONFIG.gasUrl || localStorage.getItem('gasAppUrl') || '';
 
             // 初始化日期為今天
-            document.getElementById('inputDate').valueAsDate = new Date();
+            setTodayDate();
 
             // 自動轉換全形數字為半形
             document.getElementById('inputAmount').addEventListener('input', function (e) {
@@ -868,6 +868,15 @@
                 }
             }
 
+            // 設定日期為今天 (修正時區問題)
+            function setTodayDate() {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                document.getElementById('inputDate').value = `${year}-${month}-${day}`;
+            }
+
             // 快速加金額 (已移除)
             // function addAmount(val) { ... }
 
@@ -913,7 +922,7 @@
                         alert(`✅ 記帳成功！\n資料已寫入試算表。\n內容：${savedData.slice(0, 3).join(', ')}...`);
 
                         document.getElementById('accountingForm').reset();
-                        document.getElementById('inputDate').valueAsDate = new Date();
+                        setTodayDate();
 
                         // 重新載入資料以更新圖表和標籤
                         loadGoogleSheetsData();
