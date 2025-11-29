@@ -768,6 +768,16 @@
             // 初始化日期為今天
             document.getElementById('inputDate').valueAsDate = new Date();
 
+            // 自動轉換全形數字為半形
+            document.getElementById('inputAmount').addEventListener('input', function (e) {
+                let val = e.target.value;
+                // 全形轉半形邏輯
+                val = val.replace(/[\uff10-\uff19]/g, function (m) {
+                    return String.fromCharCode(m.charCodeAt(0) - 0xfee0);
+                });
+                e.target.value = val;
+            });
+
             // 切換設定顯示
             function toggleSettings() {
                 const section = document.getElementById('apiSection');
