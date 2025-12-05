@@ -1,3 +1,4 @@
+物ㄏㄨ
 <!DOCTYPE html>
 <html lang="zh-TW">
 
@@ -953,27 +954,50 @@
 
             // 生成專案標籤 (依最後使用日期排序)
             function generateProjectTags() {
-                const projectLastUsed = {};
+                const projectStats = {};
 
-                // 掃描所有資料，記錄每個專案最後出現的日期
-                accountingData.forEach(item => {
+                // 掃描所有資料，記錄每個專案最後出現的日期和最大索引（代表最新加入）
+                accountingData.forEach((item, index) => {
                     if (!item.project) return;
                     const project = item.project.trim();
                     if (!project) return;
 
-                    // 假設資料格式正確，比較日期字串即可 (YYYY-MM-DD)
-                    // 如果該專案還沒記錄過，或當前這筆資料日期比較新，就更新
-                    if (!projectLastUsed[project] || item.date > projectLastUsed[project]) {
-                        projectLastUsed[project] = item.date;
+                    // 解析日期
+                    let timestamp = 0;
+                    if (item.date) {
+                        // 嘗試解析日期，支援 YYYY/MM/DD, YYYY-MM-DD 等格式
+                        const dateObj = new Date(item.date);
+                        if (!isNaN(dateObj.getTime())) {
+                            timestamp = dateObj.getTime();
+                        }
+                    }
+
+                    if (!projectStats[project]) {
+                        projectStats[project] = {
+                            date: timestamp,
+                            lastIndex: index
+                        };
+                    } else {
+                        // 如果日期更新，更新日期
+                        if (timestamp > projectStats[project].date) {
+                            projectStats[project].date = timestamp;
+                        }
+                        // 更新 lastIndex 為當前索引 (因為是往後掃描，當前的一定比較大)
+                        projectStats[project].lastIndex = index;
                     }
                 });
 
                 const container = document.getElementById('projectTags');
                 container.innerHTML = '';
 
-                // 依照日期降序排序 (最新的在前面)，並只取前 5 個
-                const sortedProjects = Object.keys(projectLastUsed)
-                    .sort((a, b) => projectLastUsed[b].localeCompare(projectLastUsed[a]))
+                // 排序：日期越新越前 -> 索引越大越前 (代表越新加入)
+                const sortedProjects = Object.keys(projectStats)
+                    .sort((a, b) => {
+                        const dateDiff = projectStats[b].date - projectStats[a].date;
+                        if (dateDiff !== 0) return dateDiff;
+                        // 日期相同時，優先顯示最新加入的 (索引較大的)
+                        return projectStats[b].lastIndex - projectStats[a].lastIndex;
+                    })
                     .slice(0, 5);
 
                 sortedProjects.forEach(project => {
