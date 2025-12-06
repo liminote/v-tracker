@@ -482,10 +482,79 @@
                 font-size: 14px;
             }
         }
+
+        /* Toast Notification */
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 2px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            bottom: 30px;
+            font-size: 17px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+
+        .toast.success {
+            background-color: #4CAF50;
+        }
+
+        .toast.error {
+            background-color: #F44336;
+        }
+
+        /* Advanced Fields Toggle */
+        .advanced-toggle {
+            color: var(--color-5);
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 15px;
+            display: inline-block;
+            text-decoration: underline;
+        }
+
+        .advanced-fields {
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .advanced-fields.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
 <body>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">儲存成功</div>
+
     <!-- 密碼保護界面 -->
     <div id="passwordOverlay" class="password-overlay">
         <div class="password-container">
@@ -631,19 +700,28 @@
                             <input type="tel" id="inputAmount" class="form-input" placeholder="0" required
                                 inputmode="numeric">
                         </div>
+                    </div>
 
-                        <!-- 第三列：專案與備註 -->
-                        <div class="form-group">
-                            <label class="form-label">專案 (最近5個)</label>
-                            <input type="text" id="inputProject" class="form-input" placeholder="可輸入或點選">
-                            <div id="projectTags" class="tag-container">
-                                <!-- 標籤會由 JS 自動生成 -->
+                    <!-- 進階欄位開關 -->
+                    <div class="advanced-toggle" onclick="toggleAdvancedFields()">
+                        👇 顯示/隱藏 專案與備註
+                    </div>
+
+                    <!-- 第三列：專案與備註 (預設隱藏) -->
+                    <div id="advancedFields" class="advanced-fields">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">專案 (最近5個)</label>
+                                <input type="text" id="inputProject" class="form-input" placeholder="可輸入或點選">
+                                <div id="projectTags" class="tag-container">
+                                    <!-- 標籤會由 JS 自動生成 -->
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="form-group">
-                            <label class="form-label">備註</label>
-                            <input type="text" id="inputNote" class="form-input" placeholder="選填">
+                            <div class="form-group">
+                                <label class="form-label">備註</label>
+                                <input type="text" id="inputNote" class="form-input" placeholder="選填">
+                            </div>
                         </div>
                     </div>
 
@@ -780,6 +858,23 @@
                 document.getElementById(tabName).classList.add('active');
             }
 
+            // 切換進階欄位
+            function toggleAdvancedFields() {
+                const fields = document.getElementById('advancedFields');
+                fields.classList.toggle('show');
+            }
+
+            // 顯示 Toast 訊息
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.className = 'toast show ' + type;
+
+                setTimeout(function () {
+                    toast.className = toast.className.replace('show', '');
+                }, 3000);
+            }
+
             // Google Sheets 設定
             // ==========================================
             // 使用者設定區 (請在此填入您的設定以避免重複輸入)
@@ -908,47 +1003,92 @@
                 submitBtn.disabled = true;
                 submitBtn.textContent = '⏳ 儲存中...';
 
-                const data = {
-                    date: document.getElementById('inputDate').value,
-                    category: document.getElementById('inputCategory').value,
-                    content: document.getElementById('inputContent').value,
-                    amount: document.getElementById('inputAmount').value, // 支出為正數，後端或顯示時處理
-                    project: document.getElementById('inputProject').value,
-                    note: document.getElementById('inputNote').value
+                // 1. 取得表單資料
+                const rawDate = document.getElementById('inputDate').value;
+                const category = document.getElementById('inputCategory').value;
+                const content = document.getElementById('inputContent').value;
+                const amount = parseFloat(document.getElementById('inputAmount').value) || 0;
+                const project = document.getElementById('inputProject').value;
+                const note = document.getElementById('inputNote').value;
+
+                // 格式化日期 (YYYY/MM/DD)
+                const dateObj = new Date(rawDate);
+                const formattedDate = `${dateObj.getFullYear()}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}`;
+
+                const newRecord = {
+                    date: formattedDate,
+                    category: category,
+                    content: content,
+                    amount: amount,
+                    project: project,
+                    note: note
                 };
 
+                // 2. 樂觀 UI 更新 (Optimistic UI Update)
+                // 立即將資料加入本地陣列並更新畫面，不等待後端回應
+                accountingData.unshift(newRecord); // 加到最前面
+                updateDisplay();
+                generateProjectTags();
+
+                // 顯示成功訊息 (Toast)
+                showToast('✅ 已加入佇列，背景儲存中...');
+
+                // 清空部分欄位，方便連續輸入
+                document.getElementById('inputContent').value = '';
+                document.getElementById('inputAmount').value = '';
+                // 專案和備註通常是針對單筆，也清空
+                document.getElementById('inputProject').value = '';
+                document.getElementById('inputNote').value = '';
+                // 日期和分類保留，方便連續記帳
+
+                // 恢復按鈕狀態，讓使用者可以繼續輸入
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+                document.getElementById('inputContent').focus(); // 焦點回到內容輸入框
+
                 try {
-                    // 使用 no-cors 模式發送請求，或確保 GAS 處理了 CORS
-                    // 這裡使用標準 fetch，GAS 需要正確回傳 CORS header
-                    // 或是使用 application/x-www-form-urlencoded 比較容易過
+                    // 3. 背景發送請求
+                    const dataToSend = {
+                        date: rawDate, // 傳送原始日期格式給 GAS 處理
+                        category: category,
+                        content: content,
+                        amount: amount,
+                        project: project,
+                        note: note
+                    };
 
                     const response = await fetch(GAS_URL, {
                         method: 'POST',
-                        body: JSON.stringify(data)
+                        body: JSON.stringify(dataToSend)
                     });
 
                     const result = await response.json();
 
                     if (result.status === 'success') {
-                        // 顯示更詳細的成功訊息，包含回傳的資料
-                        const savedData = result.data || [];
-                        alert(`✅ 記帳成功！\n資料已寫入試算表。\n內容：${savedData.slice(0, 3).join(', ')}...`);
-
-                        document.getElementById('accountingForm').reset();
-                        setTodayDate();
-
-                        // 重新載入資料以更新圖表和標籤
-                        loadGoogleSheetsData();
+                        // 背景儲存成功，更新 Toast
+                        showToast('✅ 資料已安全儲存到試算表');
+                        console.log('背景儲存成功:', result);
                     } else {
                         throw new Error(result.message || '未知錯誤');
                     }
 
                 } catch (error) {
                     console.error('記帳失敗:', error);
-                    alert('❌ 記帳失敗: ' + error.message);
-                } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = originalText;
+                    showToast('❌ 儲存失敗，請檢查網路或設定', 'error');
+
+                    // 如果失敗，應該從本地陣列中移除剛剛加入的資料 (Rollback)
+                    // 這裡簡單實作：重新載入資料 (雖然會慢一點，但保證資料一致性)
+                    // 或者可以找出剛剛那筆並移除
+                    accountingData.shift();
+                    updateDisplay();
+
+                    // 恢復輸入框內容讓使用者重試
+                    document.getElementById('inputContent').value = content;
+                    document.getElementById('inputAmount').value = amount;
+                    document.getElementById('inputProject').value = project;
+                    document.getElementById('inputNote').value = note;
+
+                    alert('❌ 背景儲存失敗: ' + error.message + '\n資料已還原，請重試。');
                 }
             }
 
